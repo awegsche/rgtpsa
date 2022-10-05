@@ -74,28 +74,27 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> Sub<TPSA<NV, MO, N>> for
 // -------------------------------------------------------------------------------------------------
 // ---- Mul ----------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
+//
+impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
+    pub fn mul_inplace(a: &Self, b: &Self, result: &mut Self) {
+        unsafe {
+            for &(i, j, k) in Self::get_mul_map() {
+                *result.coeffs.get_unchecked_mut(k as usize) = *result.coeffs.get_unchecked(k as usize)
+                    + *a.coeffs.get_unchecked(i as usize) * *b.coeffs.get_unchecked(j as usize);
+            }
+        }
+    }
+}
 impl<const NV: usize, const MO: usize, N: ComplexFloat> Mul<&TPSA<NV, MO, N>> for &TPSA<NV, MO, N> {
     type Output = TPSA<NV, MO, N>;
 
     fn mul(self, rhs: &TPSA<NV, MO, N>) -> Self::Output {
         let n_coeffs = get_n_coeffs(NV, MO);
         let mut result = Self::Output {
-            coeffs: vec![N::zero(); n_coeffs]
+            coeffs: vec![N::zero(); n_coeffs],
         };
-        let mul_map = TPSA::<NV, MO, N>::get_mul_map();
 
-        unsafe {
-            for i in 0..n_coeffs {
-                for j in 0..n_coeffs {
-                    let k = mul_map[i * n_coeffs + j];
-                    if k < usize::MAX {
-                        *result.coeffs.get_unchecked_mut(k) = *result.coeffs.get_unchecked_mut(k)
-                            + *self.coeffs.get_unchecked(i) * *rhs.coeffs.get_unchecked(j)
-                        //coeffs[k] += self.coeffs[i] * rhs.coeffs[j];
-                    }
-                }
-            }
-        }
+        TPSA::mul_inplace(self, rhs, &mut result);
 
         result
     }
@@ -275,4 +274,5 @@ mod test {
 
         assert_eq!(ts, t1 * 2.0);
     }
+    use rand::prelude::*;
 }

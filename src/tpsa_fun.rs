@@ -7,13 +7,13 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
     pub fn sin(&self) -> TPSA<NV, MO, N> {
         let mut result = self.clone();
         let mut factor = self.clone();
+        let self_squared = self * self;
 
-        for k in 1..=((MO as u32) * 2) {
-            let factorial = N::from((2 * k) * (2 * k + 1)).unwrap();
-            factor *= self;
-            factor *= self;
-            factor *= N::from(-1.0).unwrap();
-            factor /= factorial;
+        for k in 1..=((MO as i32) + 2) {
+            let factorial = -(2.0 * k as f64) * (2.0 * k as f64 + 1.0);
+            factor *= &self_squared;
+            //factor *= N::from(-1.0).unwrap();
+            factor /= N::from(factorial).unwrap();
             result += &factor;
         }
         result

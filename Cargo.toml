@@ -13,3 +13,6 @@ clap = { version = "4.0.4", features = ["derive"] }
 mimalloc = {version="*", default-features = false}
 num = "0.4.0"
 num-complex = "0.4.2"
+
+[dev-dependencies]
+rand = "*"

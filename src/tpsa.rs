@@ -98,9 +98,9 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
     pub(crate) fn get_exp_idx_range(idx: usize) -> std::ops::Range<usize> {
         (idx * NV)..(idx + 1) * NV
     }
-
-    pub(crate) fn get_mul_map() -> &'static Vec<usize> {
-        static INSTANCE: OnceCell<Vec<usize>> = OnceCell::new();
+    #[inline]
+    pub fn get_mul_map() -> &'static Vec<(u16, u16, u16)> {
+        static INSTANCE: OnceCell<Vec<(u16, u16, u16)>> = OnceCell::new();
 
         INSTANCE.get_or_init(|| {
             let temp_map = Self::get_index_from_exponents_map();
@@ -108,6 +108,8 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
             let exps = Self::get_exp();
 
             let mut map = Vec::new();
+
+            assert!(n_coeffs < u16::MAX.into());
 
             for idx1 in 0..n_coeffs {
                 let exp1 = &exps[Self::get_exp_idx_range(idx1)];
@@ -119,11 +121,9 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
                         sum[i] = exp1[i] + exp2[i];
                         ord_sum += sum[i] as usize;
                     }
-                    map.push(if ord_sum <= MO {
-                        temp_map[&sum[..]]
-                    } else {
-                        usize::MAX
-                    });
+                    if ord_sum <= MO {
+                        map.push((idx1 as u16, idx2 as u16, temp_map[&sum[..]] as u16));
+                    }
                 }
             }
 
@@ -131,6 +131,7 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
         })
     }
 
+    #[inline]
     pub(crate) fn get_der_map() -> &'static Vec<(usize, f64)> {
         static INSTANCE: OnceCell<Vec<(usize, f64)>> = OnceCell::new();
 
@@ -197,24 +198,24 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat + std::fmt::LowerExp> TPS
         f: &mut std::fmt::Formatter<'_>,
     ) -> std::fmt::Result {
         let exponents = Self::get_exp();
-        write!(f, "{:>3} | {:20} | Exp", "I", "coeff")?;
+        write!(f, "{:>3} | {:25} | EXP", "I", "COEFFICIENT")?;
         for _ in 0..(NV - 1).max(0) {
             write!(f, "   ")?;
         }
-        writeln!(f, "| Ord")?;
+        writeln!(f, "| ORDER")?;
 
-        write!(f, "----+----------------------+-")?;
+        write!(f, "----+---------------------------+-")?;
         for _ in 0..NV {
             write!(f, "---")?;
         }
-        writeln!(f, "+----")?;
+        writeln!(f, "+------")?;
 
         for idx in 0..self.n_coeffs() {
             let a = self.coeffs[idx];
             if !print_zeros && a.is_zero() {
                 continue;
             }
-            write!(f, "{:3} | {:20.13e} | ", idx, self.coeffs[idx])?;
+            write!(f, "{:3} | {:25.18e} | ", idx, self.coeffs[idx])?;
             let mut order = 0;
             for e in 1..=NV {
                 let exp = exponents[(idx + 1) * NV - e];
