@@ -54,7 +54,7 @@ impl<const NV: usize, const MO: usize, N: ComplexFloat> TPSA<NV, MO, N> {
     /// # Example
     ///
     /// ```
-    /// # use gtpsa::tpsa::TPSA;
+    /// # use rgtpsa::tpsa::TPSA;
     /// # type T = TPSA<3,2,f64>;
     /// // t = 2x
     /// let t = T::from_x(2.0);
